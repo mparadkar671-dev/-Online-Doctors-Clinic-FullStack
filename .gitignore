@@ -1,0 +1,16 @@
+# Ignore hidden IDE settings
+.metadata/
+.recommenders/
+RemoteSystemsTempFiles/
+.sts4/
+.vscode/
+
+# Ignore heavy Java/Maven folders
+**/target/
+**/bin/
+**/*.class
+
+# Ignore heavy React/Node folders
+**/node_modules/
+**/build/
+.env
