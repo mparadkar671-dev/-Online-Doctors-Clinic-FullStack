@@ -1,0 +1,31 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Build Backend with Maven
+      # We tell GitHub to go into your backend folder to find pom.xml
+      run: mvn -B package --file OnlineDoctorsClinic/pom.xml 
+
+    - name: Test Frontend
+      run: |
+        cd clinic-frontend
+        npm install
+        npm run build --if-present
