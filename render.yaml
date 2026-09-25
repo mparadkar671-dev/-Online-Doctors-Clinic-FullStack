@@ -13,11 +13,11 @@ services:
       - key: PORT
         value: 8080
       - key: DB_URL
-        sync: false # Set in Render dashboard (e.g. Aiven/TiDB MySQL URL)
+        value: jdbc:mysql://doctors-clinic1-mparadkar.i.aivencloud.com:11588/defaultdb?sslMode=REQUIRED&allowPublicKeyRetrieval=true
       - key: DB_USERNAME
-        sync: false
+        value: avnadmin
       - key: DB_PASSWORD
-        sync: false
+        sync: false # Paste your secret Aiven password in Render dashboard
       - key: MAIL_USERNAME
         value: mparadkar671@gmail.com
       - key: MAIL_PASSWORD
