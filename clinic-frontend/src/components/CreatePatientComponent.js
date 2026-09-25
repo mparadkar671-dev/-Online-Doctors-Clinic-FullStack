@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import BASE_URL from '../config/api';
 
 const CreatePatientComponent = () => {
     const [patient, setPatient] = useState({
@@ -28,7 +29,7 @@ const CreatePatientComponent = () => {
 
         setIsSaving(true);
         try {
-            await axios.post("http://localhost:8080/api/clinic/patients", patient);
+            await axios.post(`${BASE_URL}/api/clinic/patients`, patient);
             toast.success(`Patient ${patient.patientName} registered successfully!`);
             navigate("/book-appointment");
         } catch (err) {

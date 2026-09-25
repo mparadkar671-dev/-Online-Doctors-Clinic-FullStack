@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import BASE_URL from '../config/api';
 import { 
     ResponsiveContainer, 
     AreaChart, 
@@ -46,10 +47,10 @@ const Dashboard = () => {
         const fetchData = async () => {
             try {
                 const [docRes, patRes, apptRes, leaveRes] = await Promise.all([
-                    axios.get("http://localhost:8080/api/clinic/doctors").catch(() => ({ data: [] })),
-                    axios.get("http://localhost:8080/api/clinic/patients").catch(() => ({ data: [] })),
-                    axios.get("http://localhost:8080/api/clinic/appointments").catch(() => ({ data: [] })),
-                    axios.get("http://localhost:8080/api/clinic/leaves/pending").catch(() => ({ data: [] }))
+                    axios.get(`${BASE_URL}/api/clinic/doctors`).catch(() => ({ data: [] })),
+                    axios.get(`${BASE_URL}/api/clinic/patients`).catch(() => ({ data: [] })),
+                    axios.get(`${BASE_URL}/api/clinic/appointments`).catch(() => ({ data: [] })),
+                    axios.get(`${BASE_URL}/api/clinic/leaves/pending`).catch(() => ({ data: [] }))
                 ]);
 
                 const doctors = docRes.data || [];

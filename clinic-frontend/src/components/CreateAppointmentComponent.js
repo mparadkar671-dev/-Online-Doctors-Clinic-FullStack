@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2'; 
 import { toast } from 'react-toastify';
+import BASE_URL from '../config/api';
 
 const CreateAppointmentComponent = () => {
     const [patients, setPatients] = useState([]);
@@ -19,11 +20,11 @@ const CreateAppointmentComponent = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        axios.get("http://localhost:8080/api/clinic/patients")
+        axios.get(`${BASE_URL}/api/clinic/patients`)
             .then(res => setPatients(res.data || []))
             .catch(() => toast.error("Error fetching patient directory"));
 
-        axios.get("http://localhost:8080/api/clinic/doctors")
+        axios.get(`${BASE_URL}/api/clinic/doctors`)
             .then(res => setDoctors(res.data || []))
             .catch(() => toast.error("Error fetching doctor directory"));
     }, []);
@@ -60,7 +61,7 @@ const CreateAppointmentComponent = () => {
             timerProgressBar: true,
             didOpen: () => { Swal.showLoading(); }
         }).then(() => {
-            axios.post("http://localhost:8080/api/clinic/appointments", finalData)
+            axios.post(`${BASE_URL}/api/clinic/appointments`, finalData)
                 .then(() => {
                     const mobileNum = selectedPatient.mobile || selectedPatient.contactNumber || '';
                     const whatsappMsg = `Hello ${selectedPatient.patientName}, your clinic appointment with Dr. ${appointment.doctorName} is confirmed for ${appointment.appointmentTime.replace('T', ' at ')}.`;

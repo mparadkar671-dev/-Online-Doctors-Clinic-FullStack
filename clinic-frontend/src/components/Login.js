@@ -8,6 +8,7 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [coldStartNotice, setColdStartNotice] = useState(false);
 
     // Modal state for in-page Forgot/Reset Password
     const [showResetModal, setShowResetModal] = useState(false);
@@ -26,16 +27,30 @@ const Login = () => {
         }
 
         setIsLoading(true);
+        setColdStartNotice(false);
+        const timer = setTimeout(() => {
+            setColdStartNotice(true);
+        }, 3000);
+
         try {
             const data = await AuthService.login(username.trim(), password);
             toast.success(`Welcome back, ${data.username || username}!`);
             navigate("/dashboard");
             window.location.reload();
         } catch (err) {
-            const errorMsg = err.response?.data?.error || err.response?.data || "Invalid credentials. Please verify your username and password.";
-            toast.error(typeof errorMsg === 'string' ? errorMsg : "Invalid credentials.");
+            let errorMsg = "Invalid credentials. Please verify your username and password.";
+            if (err.code === 'ERR_NETWORK' || !err.response) {
+                errorMsg = "Server is waking up from idle sleep or network is connecting. Please retry in a moment.";
+            } else if (err.response?.data?.error) {
+                errorMsg = err.response.data.error;
+            } else if (typeof err.response?.data === 'string') {
+                errorMsg = err.response.data;
+            }
+            toast.error(errorMsg);
         } finally {
+            clearTimeout(timer);
             setIsLoading(false);
+            setColdStartNotice(false);
         }
     };
 
@@ -224,6 +239,13 @@ const Login = () => {
                                                 <span>Sign In to Dashboard →</span>
                                             )}
                                         </button>
+
+                                        {coldStartNotice && (
+                                            <div className="alert alert-info py-2 px-3 mt-3 small text-center mb-0 d-flex align-items-center justify-content-center gap-2" style={{ fontSize: '0.82rem' }}>
+                                                <span className="spinner-grow spinner-grow-sm text-primary" role="status"></span>
+                                                <span>Connecting to cloud backend (free server takes ~20s to wake up)...</span>
+                                            </div>
+                                        )}
                                     </form>
 
                                     <div className="mt-4 pt-3 border-top text-center">

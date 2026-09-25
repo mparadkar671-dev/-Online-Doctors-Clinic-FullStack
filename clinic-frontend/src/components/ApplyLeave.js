@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AuthService from '../services/AuthService';
+import BASE_URL from '../config/api';
 
 const ApplyLeave = () => {
     const user = AuthService.getCurrentUser();
@@ -30,7 +31,7 @@ const ApplyLeave = () => {
 
         setIsSubmitting(true);
         try {
-            await axios.post("http://localhost:8080/api/clinic/leaves/apply", leave);
+            await axios.post(`${BASE_URL}/api/clinic/leaves/apply`, leave);
             toast.success("Leave application submitted for Practice Manager approval!");
             navigate("/dashboard");
         } catch (err) {

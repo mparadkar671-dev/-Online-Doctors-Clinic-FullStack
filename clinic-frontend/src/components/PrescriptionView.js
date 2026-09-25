@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { jsPDF } from "jspdf";
 import { toast } from 'react-toastify';
+import BASE_URL from '../config/api';
 
 const PrescriptionView = () => {
     const { id } = useParams();
@@ -12,7 +13,7 @@ const PrescriptionView = () => {
 
     useEffect(() => {
         setIsLoading(true);
-        axios.get(`http://localhost:8080/api/clinic/prescriptions/appointment/${id}`)
+        axios.get(`${BASE_URL}/api/clinic/prescriptions/appointment/${id}`)
             .then(res => setPresc(res.data))
             .catch(() => {
                 // If not found in DB, provide default clinical template for viewing

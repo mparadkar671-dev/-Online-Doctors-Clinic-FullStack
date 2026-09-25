@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import BASE_URL from '../config/api';
 
 const DoctorProfile = () => {
     const rawTempUser = localStorage.getItem("temp_user");
@@ -50,7 +51,7 @@ const DoctorProfile = () => {
 
         setIsSaving(true);
         try {
-            await axios.post("http://localhost:8080/api/clinic/doctors/profile", dataToSend);
+            await axios.post(`${BASE_URL}/api/clinic/doctors/profile`, dataToSend);
             toast.success("Medical profile activated! Please sign in with your credentials.");
             localStorage.removeItem("temp_user");
             navigate("/login");

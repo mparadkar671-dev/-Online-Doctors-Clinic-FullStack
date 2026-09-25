@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
 import AuthService from '../services/AuthService';
+import BASE_URL from '../config/api';
 
 const ListAppointmentComponent = () => {
     const [appointments, setAppointments] = useState([]);
@@ -17,7 +18,7 @@ const ListAppointmentComponent = () => {
 
     const fetchAppointments = () => {
         setIsLoading(true);
-        axios.get("http://localhost:8080/api/clinic/appointments")
+        axios.get(`${BASE_URL}/api/clinic/appointments`)
             .then(res => {
                 const all = res.data || [];
                 if (role === 'ROLE_DOCTOR') {
@@ -63,7 +64,7 @@ const ListAppointmentComponent = () => {
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                axios.put(`http://localhost:8080/api/clinic/appointments/${id}/reschedule`, 
+                axios.put(`${BASE_URL}/api/clinic/appointments/${id}/reschedule`, 
                     { newTime: result.value.newTime },
                     { headers: { 'Content-Type': 'application/json' } }
                 )

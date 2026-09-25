@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import BASE_URL from '../config/api';
 
 const Register = () => {
     const [user, setUser] = useState({ 
@@ -18,7 +19,7 @@ const Register = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        axios.get("http://localhost:8080/auth/roles-available")
+        axios.get(`${BASE_URL}/auth/roles-available`)
             .then(res => setAvailableRoles(res.data || {}))
             .catch(() => setAvailableRoles({ ROLE_DOCTOR: true }));
     }, []);
@@ -65,7 +66,7 @@ const Register = () => {
                 role: user.role
             };
 
-            await axios.post("http://localhost:8080/auth/register", payload);
+            await axios.post(`${BASE_URL}/auth/register`, payload);
             toast.success("Account created successfully!");
 
             if (user.role === 'ROLE_DOCTOR') {

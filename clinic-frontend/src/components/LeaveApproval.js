@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
+import BASE_URL from '../config/api';
 
 const LeaveApproval = () => {
     const [leaves, setLeaves] = useState([]);
@@ -13,7 +14,7 @@ const LeaveApproval = () => {
 
     const loadLeaves = () => {
         setIsLoading(true);
-        axios.get("http://localhost:8080/api/clinic/leaves/pending")
+        axios.get(`${BASE_URL}/api/clinic/leaves/pending`)
             .then(res => setLeaves(res.data || []))
             .catch(() => toast.error("Failed to load staff leave applications"))
             .finally(() => setIsLoading(false));
@@ -33,7 +34,7 @@ const LeaveApproval = () => {
             cancelButtonColor: '#64748b'
         }).then((result) => {
             if (result.isConfirmed) {
-                axios.put(`http://localhost:8080/api/clinic/leaves/${id}/${action}`)
+                axios.put(`${BASE_URL}/api/clinic/leaves/${id}/${action}`)
                     .then(() => {
                         toast.success(`Leave request ${action}ed successfully!`);
                         loadLeaves();
