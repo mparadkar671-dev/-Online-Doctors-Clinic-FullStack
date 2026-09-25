@@ -19,7 +19,7 @@ import com.mayuresh.onlinedoctorsclinic.service.DoctorService;
 
 @RestController
 @RequestMapping("/doctors")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"})
+@CrossOrigin(originPatterns = "*", allowCredentials = "true")
 public class DoctorController {
 
     @Autowired

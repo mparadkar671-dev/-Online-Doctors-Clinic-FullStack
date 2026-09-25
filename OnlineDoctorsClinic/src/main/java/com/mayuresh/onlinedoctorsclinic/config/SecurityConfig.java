@@ -25,11 +25,11 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(request -> {
                 CorsConfiguration config = new CorsConfiguration();
-                // Allow both common React ports
-                config.setAllowedOrigins(Arrays.asList("http://localhost:3001", "http://localhost:3000"));
+                // Allow localhost and production origins (Vercel, Render, custom domains)
+                config.setAllowedOriginPatterns(Arrays.asList("*"));
                 // Explicitly allow all standard REST methods
-                config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+                config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+                config.setAllowedHeaders(Arrays.asList("*"));
                 config.setAllowCredentials(true);
                 return config;
             }))

@@ -25,7 +25,7 @@ import com.mayuresh.onlinedoctorsclinic.repository.PatientRepository;
 
 @RestController
 @RequestMapping("/api/clinic")
-@CrossOrigin(origins = {"http://localhost:3001", "http://localhost:3000"}, allowCredentials = "true")
+@CrossOrigin(originPatterns = "*", allowCredentials = "true")
 public class ClinicController {
 
     @Autowired private DoctorRepository docRepo;

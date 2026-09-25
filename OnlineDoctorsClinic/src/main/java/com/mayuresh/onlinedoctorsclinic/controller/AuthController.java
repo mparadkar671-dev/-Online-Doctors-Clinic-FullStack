@@ -26,7 +26,7 @@ import com.mayuresh.onlinedoctorsclinic.service.EmailService;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"}, allowCredentials = "true")
+@CrossOrigin(originPatterns = "*", allowCredentials = "true")
 public class AuthController {
 
     @Autowired
