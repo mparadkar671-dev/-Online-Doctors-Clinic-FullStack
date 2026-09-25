@@ -37,4 +37,6 @@ public class Doctor {
     public void setContactNumber(String contactNumber) { this.contactNumber = contactNumber; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+    public String getPhone() { return contactNumber; }
+    public void setPhone(String phone) { this.contactNumber = phone; }
 }

@@ -1,5 +1,7 @@
 import axios from 'axios';
-const API_URL = "http://localhost:8080/appointments";
+import BASE_URL from '../config/api';
+
+const API_URL = `${BASE_URL}/appointments`;
 class AppointmentService {
     getAppointments() { return axios.get(API_URL); }
     saveAppointment(appointment) { return axios.post(API_URL, appointment); }

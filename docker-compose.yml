@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  clinic-db:
+    image: mysql:8.0
+    container_name: clinic-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: doctors_clinic
+    ports:
+      - "3306:3306"
+    volumes:
+      - clinic_db_data:/var/lib/mysql
+
+  # Spring Boot Backend
+  clinic-backend:
+    build:
+      context: ./OnlineDoctorsClinic
+      dockerfile: Dockerfile
+    container_name: clinic-backend
+    restart: always
+    depends_on:
+      - clinic-db
+    environment:
+      DB_URL: jdbc:mysql://clinic-db:3306/doctors_clinic?useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      MAIL_USERNAME: ${MAIL_USERNAME:-mparadkar671@gmail.com}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    ports:
+      - "8080:8080"
+
+  # React Frontend
+  clinic-frontend:
+    build:
+      context: ./clinic-frontend
+      dockerfile: Dockerfile
+    container_name: clinic-frontend
+    restart: always
+    depends_on:
+      - clinic-backend
+    ports:
+      - "3000:80"
+
+volumes:
+  clinic_db_data:

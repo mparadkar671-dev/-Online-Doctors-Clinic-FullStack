@@ -9,6 +9,8 @@ import com.mayuresh.onlinedoctorsclinic.entity.User;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     Boolean existsByUsername(String username);
-    // NEW: Needed for the 1 Admin / 1 Manager limit logic
     Boolean existsByRole(String role); 
+    Optional<User> findByEmail(String email);
+    Boolean existsByEmail(String email);
+    Optional<User> findByResetToken(String resetToken);
 }

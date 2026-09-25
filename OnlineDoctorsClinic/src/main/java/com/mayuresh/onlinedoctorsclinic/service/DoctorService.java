@@ -35,8 +35,11 @@ public class DoctorService {
         if (existingDoctor != null) {
             existingDoctor.setDoctorName(doctorDetails.getDoctorName());
             existingDoctor.setSpecialization(doctorDetails.getSpecialization());
+            existingDoctor.setExperience(doctorDetails.getExperience());
+            existingDoctor.setConsultationFee(doctorDetails.getConsultationFee());
+            existingDoctor.setAvailability(doctorDetails.getAvailability());
             existingDoctor.setEmail(doctorDetails.getEmail());
-            existingDoctor.setPhone(doctorDetails.getPhone());
+            existingDoctor.setContactNumber(doctorDetails.getContactNumber());
             return doctorRepository.save(existingDoctor);
         }
         return null;

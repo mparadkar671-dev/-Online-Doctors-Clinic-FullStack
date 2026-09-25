@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2'; 
+import { toast } from 'react-toastify';
 
 const CreateAppointmentComponent = () => {
     const [patients, setPatients] = useState([]);
@@ -13,57 +14,67 @@ const CreateAppointmentComponent = () => {
         doctorName: '', 
         appointmentTime: '' 
     });
+    const [isBooking, setIsBooking] = useState(false);
     
     const navigate = useNavigate();
 
-    // 1. Fetch Patients and Doctors on Page Load
     useEffect(() => {
         axios.get("http://localhost:8080/api/clinic/patients")
             .then(res => setPatients(res.data || []))
-            .catch(err => console.error("Error fetching patients", err));
+            .catch(() => toast.error("Error fetching patient directory"));
 
         axios.get("http://localhost:8080/api/clinic/doctors")
             .then(res => setDoctors(res.data || []))
-            .catch(err => console.error("Error fetching doctors", err));
+            .catch(() => toast.error("Error fetching doctor directory"));
     }, []);
 
-    // 2. The Integrated Booking & Notification Logic
     const handleBooking = (e) => {
         e.preventDefault();
-        if(!selectedPatient) return Swal.fire("Selection Required", "Please select a patient from the list on the left.", "warning");
-        if(!appointment.doctorId) return Swal.fire("Selection Required", "Please assign a doctor to this patient.", "warning");
+        if (!selectedPatient) {
+            Swal.fire("Patient Required", "Please choose a patient from Step 1.", "warning");
+            return;
+        }
+        if (!appointment.doctorId) {
+            Swal.fire("Doctor Required", "Please select a medical practitioner in Step 2.", "warning");
+            return;
+        }
+        if (!appointment.appointmentTime) {
+            Swal.fire("Time Required", "Please choose consultation date and time.", "warning");
+            return;
+        }
 
         const finalData = {
             ...appointment,
             patientId: selectedPatient.id,
             patientName: selectedPatient.patientName,
-            mobile: selectedPatient.mobile,
-            reason: selectedPatient.sicknessDetails,
+            mobile: selectedPatient.mobile || selectedPatient.contactNumber,
+            reason: selectedPatient.sicknessDetails || 'General Consultation',
             status: 'CONFIRMED'
         };
 
-        // UI SIMULATION: Sending Notification
+        setIsBooking(true);
         Swal.fire({
-            title: 'Processing Booking...',
-            html: `Linking patient to Dr. ${appointment.doctorName}`,
-            timer: 1500,
+            title: 'Confirming Consultation...',
+            html: `Booking <strong>${selectedPatient.patientName}</strong> with <strong>Dr. ${appointment.doctorName}</strong>`,
+            timer: 1200,
             timerProgressBar: true,
-            didOpen: () => { Swal.showLoading() }
+            didOpen: () => { Swal.showLoading(); }
         }).then(() => {
-            // CALL BACKEND
             axios.post("http://localhost:8080/api/clinic/appointments", finalData)
                 .then(() => {
-                    const whatsappMsg = `Hello ${selectedPatient.patientName}, your appointment at the Clinic is confirmed for ${appointment.appointmentTime}.`;
-                    const waLink = `https://wa.me/91${selectedPatient.mobile}?text=${encodeURIComponent(whatsappMsg)}`;
+                    const mobileNum = selectedPatient.mobile || selectedPatient.contactNumber || '';
+                    const whatsappMsg = `Hello ${selectedPatient.patientName}, your clinic appointment with Dr. ${appointment.doctorName} is confirmed for ${appointment.appointmentTime.replace('T', ' at ')}.`;
+                    const waLink = `https://wa.me/91${mobileNum}?text=${encodeURIComponent(whatsappMsg)}`;
 
                     Swal.fire({
                         icon: 'success',
-                        title: 'Appointment Confirmed!',
-                        text: 'WhatsApp notification link generated.',
+                        title: 'Appointment Scheduled!',
+                        text: 'Consultation logged into calendar.',
                         showCancelButton: true,
                         confirmButtonColor: '#25D366',
-                        confirmButtonText: 'Open WhatsApp Chat',
-                        cancelButtonText: 'Back to List'
+                        cancelButtonColor: '#2563eb',
+                        confirmButtonText: '📲 Send WhatsApp Alert',
+                        cancelButtonText: 'View Schedule Desk'
                     }).then((result) => {
                         if (result.isConfirmed) {
                             window.open(waLink, '_blank'); 
@@ -71,74 +82,169 @@ const CreateAppointmentComponent = () => {
                         navigate("/appointments");
                     });
                 })
-                .catch(err => Swal.fire("Error", "Internal Server Error during booking.", "error"));
+                .catch(() => {
+                    Swal.fire("Booking Failed", "Server error while saving appointment.", "error");
+                })
+                .finally(() => {
+                    setIsBooking(false);
+                });
         });
     };
 
+    const filteredPatients = patients.filter(p => {
+        const name = (p.patientName || "").toLowerCase();
+        const phone = (p.mobile || p.contactNumber || "").toLowerCase();
+        const query = searchTerm.toLowerCase();
+        return name.includes(query) || phone.includes(query);
+    });
+
     return (
-        <div className="container mt-4 animate__animated animate__fadeIn">
-            <h2 className="text-primary fw-bold mb-4 text-center">🏥 Smart Appointment Booking</h2>
+        <div className="container py-4">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 className="fw-bold mb-1">Schedule Consultation</h3>
+                    <p className="text-muted small mb-0">Link registered patients with specialist doctors for outpatient visits</p>
+                </div>
+                <button 
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={() => navigate('/appointments')}
+                >
+                    ← Back to Schedule
+                </button>
+            </div>
             
-            <div className="row">
-                {/* LEFT SIDE: SEARCH PATIENT */}
-                <div className="col-md-5">
-                    <div className="card shadow-sm p-3 mb-4 border-0 bg-white">
-                        <label className="fw-bold mb-2 text-secondary">Step 1: Find Patient</label>
-                        <input type="text" className="form-control mb-3" placeholder="Search by name..." 
-                               onChange={(e) => setSearchTerm(e.target.value)} />
-                        
-                        <div style={{maxHeight: '350px', overflowY: 'auto'}} className="list-group border">
-                            {patients.filter(p => p.patientName.toLowerCase().includes(searchTerm.toLowerCase())).map(p => (
-                                <button key={p.id} type="button"
-                                    className={`list-group-item list-group-item-action ${selectedPatient?.id === p.id ? 'active bg-primary border-primary' : ''}`}
-                                    onClick={() => setSelectedPatient(p)}>
-                                    <div className="fw-bold">{p.patientName}</div>
-                                    <small className={selectedPatient?.id === p.id ? 'text-white' : 'text-muted'}>
-                                        {p.mobile} | {p.gender}
-                                    </small>
-                                </button>
-                            ))}
+            <div className="row g-4">
+                {/* STEP 1: PATIENT SELECTION */}
+                <div className="col-12 col-lg-5">
+                    <div className="med-card p-4 h-100">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h5 className="fw-bold mb-0">Step 1: Select Patient</h5>
+                            <button 
+                                className="btn btn-link btn-sm text-primary p-0 text-decoration-none"
+                                onClick={() => navigate('/add-patient')}
+                            >
+                                + New Patient
+                            </button>
                         </div>
-                        {patients.length === 0 && (
-                            <div className="alert alert-warning mt-3 small">
-                                No patients found. Please register the patient first.
+
+                        <div className="position-relative mb-3">
+                            <input 
+                                type="text" 
+                                className="med-input ps-5" 
+                                placeholder="Search by name or mobile..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)} 
+                            />
+                            <div className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
                             </div>
-                        )}
+                        </div>
+
+                        <div className="list-group rounded-3 border" style={{ maxHeight: 380, overflowY: 'auto' }}>
+                            {filteredPatients.length > 0 ? (
+                                filteredPatients.map(p => (
+                                    <button 
+                                        key={p.id} 
+                                        type="button"
+                                        className={`list-group-item list-group-item-action p-3 border-0 border-bottom ${
+                                            selectedPatient?.id === p.id ? 'bg-primary-subtle border-primary text-primary' : ''
+                                        }`}
+                                        onClick={() => setSelectedPatient(p)}
+                                    >
+                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                            <span className="fw-bold">{p.patientName}</span>
+                                            <span className="badge bg-light text-dark border">
+                                                {p.age} yrs • {p.gender}
+                                            </span>
+                                        </div>
+                                        <div className="small text-muted d-flex justify-content-between">
+                                            <span>📱 {p.mobile || p.contactNumber || 'No phone'}</span>
+                                            {p.bloodGroup && <span className="text-danger fw-semibold">{p.bloodGroup}</span>}
+                                        </div>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="p-4 text-center text-muted small">
+                                    No patients found matching your search.
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* RIGHT SIDE: ASSIGN DOCTOR & TIME */}
-                <div className="col-md-7">
-                    <div className="card shadow-lg p-4 border-0 bg-white">
+                {/* STEP 2 & 3: ASSIGN DOCTOR & TIME */}
+                <div className="col-12 col-lg-7">
+                    <div className="med-card p-4 h-100">
                         <form onSubmit={handleBooking}>
-                            <div className="mb-4">
-                                <label className="fw-bold text-muted small text-uppercase">Patient Selected</label>
-                                <input className="form-control bg-light fw-bold text-primary fs-5" 
-                                       value={selectedPatient ? selectedPatient.patientName : "Waiting for selection..."} readOnly />
+                            <h5 className="fw-bold mb-3">Step 2: Assign Doctor & Time Slot</h5>
+
+                            {/* Selected Patient Banner */}
+                            <div className="p-3 rounded-3 mb-4 border" 
+                                 style={{ 
+                                     background: selectedPatient ? 'var(--primary-light)' : '#f8fafc',
+                                     borderColor: selectedPatient ? 'var(--primary)' : 'var(--border-subtle)'
+                                 }}>
+                                <span className="small text-muted fw-bold text-uppercase d-block mb-1">Selected Patient</span>
+                                {selectedPatient ? (
+                                    <div className="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <h5 className="fw-bold text-primary mb-0">{selectedPatient.patientName}</h5>
+                                            <span className="small text-muted">Contact: {selectedPatient.mobile || selectedPatient.contactNumber}</span>
+                                        </div>
+                                        <span className="med-badge med-badge-emerald">Ready to Book</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-muted small">
+                                        👈 Please click a patient in Step 1 to attach to this appointment.
+                                    </span>
+                                )}
                             </div>
 
-                            <div className="mb-3">
-                                <label className="fw-bold text-secondary">Step 2: Assign Doctor</label>
-                                <select className="form-select" required 
+                            <div className="med-input-group mb-3">
+                                <label>Assign Specialist Doctor</label>
+                                <select 
+                                    className="med-input form-select" 
+                                    required 
+                                    value={appointment.doctorId}
                                     onChange={(e) => {
-                                        const d = doctors.find(doc => doc.id === parseInt(e.target.value));
-                                        setAppointment({...appointment, doctorId: e.target.value, doctorName: d?.doctorName});
-                                    }}>
-                                    <option value="">-- Click to Select Specialist --</option>
+                                        const docId = parseInt(e.target.value);
+                                        const d = doctors.find(doc => doc.id === docId);
+                                        setAppointment({
+                                            ...appointment, 
+                                            doctorId: e.target.value, 
+                                            doctorName: d?.doctorName || ''
+                                        });
+                                    }}
+                                >
+                                    <option value="">-- Choose Specialist Physician --</option>
                                     {doctors.map(d => (
-                                        <option key={d.id} value={d.id}>Dr. {d.doctorName} ({d.specialization})</option>
+                                        <option key={d.id} value={d.id}>
+                                            {d.doctorName?.startsWith('Dr.') ? d.doctorName : `Dr. ${d.doctorName}`} — {d.specialization} (Fee: ₹{d.consultationFee || 400})
+                                        </option>
                                     ))}
                                 </select>
                             </div>
 
-                            <div className="mb-4">
-                                <label className="fw-bold text-secondary">Step 3: Appointment Date & Time</label>
-                                <input type="datetime-local" className="form-control" required 
-                                    onChange={(e) => setAppointment({...appointment, appointmentTime: e.target.value})}/>
+                            <div className="med-input-group mb-4">
+                                <label>Appointment Date & Consultation Time</label>
+                                <input 
+                                    type="datetime-local" 
+                                    className="med-input" 
+                                    required 
+                                    value={appointment.appointmentTime}
+                                    onChange={(e) => setAppointment({ ...appointment, appointmentTime: e.target.value })}
+                                />
                             </div>
 
-                            <button type="submit" className="btn btn-primary w-100 fw-bold py-3 shadow">
-                                Finalize Booking & Notify Patient
+                            <button 
+                                type="submit" 
+                                className="med-btn-primary w-100 py-3"
+                                disabled={isBooking || !selectedPatient || !appointment.doctorId}
+                            >
+                                {isBooking ? "Confirming Booking..." : "Confirm Appointment & Generate Alert →"}
                             </button>
                         </form>
                     </div>
