@@ -25,7 +25,7 @@ WORKDIR /app
 RUN addgroup -S clinic && adduser -S clinic -G clinic
 USER clinic
 
-COPY --from=builder /app/target/*.jar app.jar
+COPY --from=builder /app/target/OnlineDoctorsClinic-0.0.1-SNAPSHOT.jar app.jar
 
 ENV PORT=8080
 EXPOSE 8080
