@@ -53,8 +53,14 @@ public class AuthController {
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         Map<String, String> response = new HashMap<>();
 
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            response.put("error", "Username is required.");
+            return ResponseEntity.badRequest().body(response);
+        }
+        user.setUsername(user.getUsername().trim());
+
         if (userRepository.existsByUsername(user.getUsername())) {
-            response.put("error", "Username is already taken!");
+            response.put("error", "Username is already taken! Please choose another.");
             return ResponseEntity.badRequest().body(response);
         }
 
@@ -73,11 +79,20 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        user.setPassword(encoder.encode(user.getPassword()));
-        User saved = userRepository.save(user);
-        response.put("message", "Account registered successfully!");
-        response.put("username", saved.getUsername());
-        return ResponseEntity.ok(response);
+        if (user.getRole() == null || user.getRole().trim().isEmpty()) {
+            user.setRole("ROLE_DOCTOR");
+        }
+
+        try {
+            user.setPassword(encoder.encode(user.getPassword()));
+            User saved = userRepository.save(user);
+            response.put("message", "Account registered successfully!");
+            response.put("username", saved.getUsername());
+            return ResponseEntity.ok(response);
+        } catch (Exception ex) {
+            response.put("error", "Registration error: " + (ex.getMessage() != null ? ex.getMessage() : "Database constraint"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     // 3. LOGIN USER

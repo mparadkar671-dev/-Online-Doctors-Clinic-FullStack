@@ -11,17 +11,30 @@ const Register = () => {
         confirmPassword: '',
         email: '', 
         phoneNumber: '', 
-        role: '' 
+        role: 'ROLE_DOCTOR' 
     });
-    const [availableRoles, setAvailableRoles] = useState({});
+    const [availableRoles, setAvailableRoles] = useState({ ROLE_DOCTOR: true });
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [coldStartNotice, setColdStartNotice] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
         axios.get(`${BASE_URL}/auth/roles-available`)
-            .then(res => setAvailableRoles(res.data || {}))
-            .catch(() => setAvailableRoles({ ROLE_DOCTOR: true }));
+            .then(res => {
+                const roles = res.data || {};
+                setAvailableRoles(roles);
+                // If Admin & Manager are limit-reached, auto-select Doctor
+                if (!roles.ROLE_ADMIN && !roles.ROLE_MANAGER) {
+                    setUser(prev => ({ ...prev, role: 'ROLE_DOCTOR' }));
+                } else if (roles.ROLE_ADMIN) {
+                    setUser(prev => ({ ...prev, role: prev.role || 'ROLE_ADMIN' }));
+                }
+            })
+            .catch(() => {
+                setAvailableRoles({ ROLE_DOCTOR: true, ROLE_ADMIN: false, ROLE_MANAGER: false });
+                setUser(prev => ({ ...prev, role: 'ROLE_DOCTOR' }));
+            });
     }, []);
 
     const validate = () => {
@@ -29,8 +42,12 @@ const Register = () => {
             toast.warn("Username is required.");
             return false;
         }
+        if (user.username.trim().length < 3) {
+            toast.warn("Username must be at least 3 characters long.");
+            return false;
+        }
         if (!user.email.trim() || !user.email.includes("@")) {
-            toast.warn("Please enter a valid email address.");
+            toast.warn("Please enter a valid work email address.");
             return false;
         }
         if (user.phoneNumber.length !== 10) {
@@ -57,6 +74,11 @@ const Register = () => {
         if (!validate()) return;
 
         setIsLoading(true);
+        setColdStartNotice(false);
+        const timer = setTimeout(() => {
+            setColdStartNotice(true);
+        }, 3500);
+
         try {
             const payload = {
                 username: user.username.trim(),
@@ -81,10 +103,21 @@ const Register = () => {
                 navigate("/login");
             }
         } catch (err) {
-            const errorMsg = err.response?.data?.error || err.response?.data || "Registration failed. Please check inputs.";
-            toast.error(typeof errorMsg === 'string' ? errorMsg : "Registration failed.");
+            let errorMsg = "Registration failed. Please check inputs.";
+            if (err.code === 'ERR_NETWORK' || !err.response) {
+                errorMsg = "Unable to connect to backend server. The cloud server may be spinning up from idle sleep (free tier). Please wait 30 seconds and try again.";
+            } else if (err.response?.data?.error) {
+                errorMsg = err.response.data.error;
+            } else if (err.response?.data?.message) {
+                errorMsg = err.response.data.message;
+            } else if (typeof err.response?.data === 'string') {
+                errorMsg = err.response.data;
+            }
+            toast.error(errorMsg);
         } finally {
+            clearTimeout(timer);
             setIsLoading(false);
+            setColdStartNotice(false);
         }
     };
 
@@ -108,6 +141,13 @@ const Register = () => {
                                 <p className="text-muted small">Register as an Administrator, Practice Manager, or Specialist Doctor</p>
                             </div>
 
+                            {coldStartNotice && (
+                                <div className="alert alert-info py-2 px-3 small d-flex align-items-center mb-3 animate__animated animate__fadeIn">
+                                    <span className="spinner-border spinner-border-sm me-2 text-info" role="status"></span>
+                                    <span>Connecting to cloud server... First request may take 30-40 seconds if waking up from idle.</span>
+                                </div>
+                            )}
+
                             <form onSubmit={handleRegister}>
                                 <div className="row g-3">
                                     <div className="col-12">
@@ -117,7 +157,7 @@ const Register = () => {
                                                 id="reg-username"
                                                 type="text" 
                                                 className="med-input" 
-                                                placeholder="Choose unique username" 
+                                                placeholder="Choose unique username (e.g. dr_sharma)" 
                                                 value={user.username}
                                                 onChange={(e) => setUser({ ...user, username: e.target.value })}
                                                 required 
@@ -164,7 +204,7 @@ const Register = () => {
                                                     id="reg-password"
                                                     type={showPassword ? "text" : "password"} 
                                                     className="med-input pe-5" 
-                                                    placeholder="Create strong password" 
+                                                    placeholder="Min 8 characters" 
                                                     value={user.password}
                                                     onChange={(e) => setUser({ ...user, password: e.target.value })}
                                                     required 
@@ -206,10 +246,21 @@ const Register = () => {
                                                 required
                                             >
                                                 <option value="">-- Choose Access Level --</option>
-                                                {availableRoles.ROLE_ADMIN && <option value="ROLE_ADMIN">Admin (Clinic Executive)</option>}
-                                                {availableRoles.ROLE_MANAGER && <option value="ROLE_MANAGER">Manager (Reception & Operations)</option>}
-                                                <option value="ROLE_DOCTOR">Doctor (Medical Practitioner)</option>
+                                                <option value="ROLE_ADMIN" disabled={!availableRoles.ROLE_ADMIN}>
+                                                    Admin (Clinic Executive) {!availableRoles.ROLE_ADMIN ? "— [Limit Reached: 1 Registered]" : ""}
+                                                </option>
+                                                <option value="ROLE_MANAGER" disabled={!availableRoles.ROLE_MANAGER}>
+                                                    Manager (Reception & Operations) {!availableRoles.ROLE_MANAGER ? "— [Limit Reached: 1 Registered]" : ""}
+                                                </option>
+                                                <option value="ROLE_DOCTOR">
+                                                    Doctor (Medical Practitioner) — [Available]
+                                                </option>
                                             </select>
+                                            {!availableRoles.ROLE_ADMIN && !availableRoles.ROLE_MANAGER && (
+                                                <small className="text-muted d-block mt-1">
+                                                    Note: Executive Admin and Practice Manager accounts are already registered for this clinic. New registrations are available for Medical Doctors.
+                                                </small>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -221,7 +272,7 @@ const Register = () => {
                                 >
                                     {isLoading ? (
                                         <>
-                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                                             <span>Creating Account...</span>
                                         </>
                                     ) : (
